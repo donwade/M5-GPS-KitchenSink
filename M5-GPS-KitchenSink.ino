@@ -1,7 +1,11 @@
 #include <TinyGPSPlus.h>
-#include <SoftwareSerial.h>
-#include <M5Unified.h>
 #include <MultipleSatellite.h>
+
+#include <_m5Core2-only.h>
+#include <_viewController.h>
+#include "myTz.h"
+
+
 /*
    This sample code demonstrates just about every built-in operation of TinyGPSPlus (TinyGPSPlus).
    It requires the use of SoftwareSerial, and assumes that you have a
@@ -40,27 +44,35 @@ void setup()
 
     M5.begin(cfg);
 
-    M5.Power.setExtOutput(false);  // reset gps
-    delay(1000);
+    Serial.println("skipping power cycle reset");
+    //M5.Power.setExtOutput(false);  // reset gps
+    //delay(1000);
+
+    // ensure power to bus is on.
     M5.Power.setExtOutput(true);    // restart gps
+	M5.Display.clear();
+	
+	Serial.begin(115200);
+	gps.begin();
 
-  Serial.begin(115200);
-  gps.begin();
+	_cprintf(_WHITE, 0, "KitchenSink.ino");
 
-  Serial.println(F("KitchenSink.ino"));
-  Serial.println(F("Demonstrating nearly every feature of TinyGPSPlus"));
-  Serial.print(F("Testing TinyGPSPlus library v. ")); 
-  String version = gps.getGNSSVersion();
-  Serial.printf("GNSS SW=%s\r\n", version.c_str());
-  Serial.println(F("by Mikal Hart"));
-  Serial.println();
+	//Serial.println(F("Demonstrating nearly every feature of TinyGPSPlus"));
+	//Serial.print(F("Testing TinyGPSPlus library v. ")); 
+	String version = gps.getGNSSVersion();
+	Serial.printf("GNSS SW=%s\r\n", version.c_str());
+	//Serial.println(F("by Mikal Hart"));
+	Serial.println();
+
+	M5.Display.display();
+
 }
 
 void loop()
 {
 
   gps.updateGPS();
-  
+
   // Dispatch incoming characters
   //while (gps.available() > 0)
   //  gps.encode(gps.read());
@@ -83,24 +95,54 @@ void loop()
     Serial.print(gps.location.lat(), 6);
     Serial.print(F(" Long="));
     Serial.println(gps.location.lng(), 6);
+
+   	_cprintf(_GREEN, 1, "%c%d.%d", 
+  		gps.location.rawLat().negative ? "-" : "+",
+	    gps.location.rawLat().deg,
+        gps.location.rawLat().billionths
+        );
+    _cprintf(_GREEN, 2, "%c%d.%d",
+		gps.location.rawLng().negative ? "-" : "+",
+  		gps.location.rawLng().deg,
+  		gps.location.rawLng().billionths
+		); 
+  
   }
 
   else if (gps.date.isUpdated())
   {
-    Serial.print(F("DATE       Fix Age="));
-    Serial.print(gps.date.age());
-    Serial.print(F("ms Raw="));
-    Serial.print(gps.date.value());
-    Serial.print(F(" Year="));
-    Serial.print(gps.date.year());
-    Serial.print(F(" Month="));
-    Serial.print(gps.date.month());
-    Serial.print(F(" Day="));
-    Serial.println(gps.date.day());
-  }
+	// epoch is always sent from first found gps.
+	uint32_t tm = getEpochTimeFromGPS();
+	
+	Serial.print(F("DATE       Fix Age="));
+	Serial.print(gps.date.age());
+	Serial.print(F("ms Raw="));
+	Serial.print(gps.date.value());
+	Serial.print(F(" Year="));
+	Serial.print(gps.date.year());
+	Serial.print(F(" Month="));
+	Serial.print(gps.date.month());
+	Serial.print(F(" Day="));
+	Serial.println(gps.date.day());
+
+
+	_cprintf(_GREEN, 3, "%s", autoFILENAME("", "ran"));
+	
+	_cprintf(_CYAN, 4, "epoch=%d", tm);
+	_cprintf(_CYAN, 5, "%s", getDDMMYY(tm)); 
+
+	// gps.time.hr/min/sec is NOT available until sat lock
+	// use epoch time instead.
+
+	_cprintf(_YELLOW, 6, "%s", getHHMMSSapm(tm));
+	
+ }
 
   else if (gps.time.isUpdated())
   {
+  	// gps.time params are NOT filled in until sat lock.
+  	// could take some time. to get these ones.
+  	
     Serial.print(F("TIME       Fix Age="));
     Serial.print(gps.time.age());
     Serial.print(F("ms Raw="));
@@ -113,7 +155,8 @@ void loop()
     Serial.print(gps.time.second());
     Serial.print(F(" Hundredths="));
     Serial.println(gps.time.centisecond());
-  }
+ 
+}
 
   else if (gps.speed.isUpdated())
   {
