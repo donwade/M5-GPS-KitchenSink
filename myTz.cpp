@@ -8,40 +8,49 @@ TimeChangeRule usEST = {"EST", First, Sun, Nov, 2, -300};	// UTC - 5 hours
 
 //---------------------------
 #include <TinyGPS++.h>
+#include <MultipleSatellite.h>
 
-extern TinyGPSPlus gps;
+extern MultipleSatellite gpsM5;
+
 #define CalendarYrToTm(Y) ((Y) - 1970)
 
+uint16_t yearNow;
+uint8_t  monthNow;
+uint8_t  dayNow;
+uint8_t  hourNow;
+uint8_t  minuteNow;
+uint8_t  secondNow;
+uint32_t epochTimeNow;
 
 uint32_t getEpochTimeFromGPS() 
 {
     // 1. Extract individual pieces of date/time from TinyGPS++
-    int year 	= gps.date.year();
-    byte month 	= gps.date.month();
-    byte day 	= gps.date.day();
-    byte hour 	= gps.time.hour();
-    byte minute = gps.time.minute();
-    byte second = gps.time.second();
+    yearNow 	= gpsM5.date.year();
+    monthNow 	= gpsM5.date.month();
+    dayNow 	= gpsM5.date.day();
+    hourNow 	= gpsM5.time.hour();
+    minuteNow  = gpsM5.time.minute();
+    secondNow  = gpsM5.time.second();
 
     // 2. Format into the standard tmElements_t structure
     // Note: Weekday can be calculated or set to 0 as a dummy value
 
     tmElements_t tm;
     
-    tm.Year 	= CalendarYrToTm(year); // Converts e.g., 2026 to 56
-    tm.Month 	= month;
-    tm.Day 		= day;
-    tm.Hour 	= hour;
-    tm.Minute 	= minute;
-    tm.Second 	= second;
+    tm.Year 	= CalendarYrToTm(yearNow); // Converts e.g., 2026 to 56
+    tm.Month 	= monthNow;
+    tm.Day 		= dayNow;
+    tm.Hour 	= hourNow;
+    tm.Minute 	= minuteNow;
+    tm.Second 	= secondNow;
 
     // 3. Convert to UNIX epoch time (seconds since 1/1/1970)
-    uint32_t epochTime = (uint32_t) makeTime(tm);
+    epochTimeNow = (uint32_t) makeTime(tm);
 
     //Serial.print("Current Epoch Time: ");
     //Serial.println(epochTime);
    
-    return epochTime;
+    return epochTimeNow;
     
 }
 //---------------------------
