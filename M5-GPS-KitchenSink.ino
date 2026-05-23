@@ -10,6 +10,7 @@ void setup()
 
 void loop()
 {
-  _loop_GPS();  // run example.
+  _test_GPS();  // run example.
+  _GPS2LCD();
 } 
 
